@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Route Planner</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCtSFwATUb4p2pSC9QEmbERxq5QmV9IjbM"></script>
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        #controls {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Route Planner</h1>
+    <div id="controls">
+        <input type="text" id="name" placeholder="Enter name">
+        <input type="text" id="address" placeholder="Enter address">
+        <button onclick="saveContact()">Save Contact</button>
+        <button onclick="loadContacts()">Load Contacts</button>
+        <button onclick="addAddress()">Add Address</button>
+        <button onclick="optimizeRoute()">Optimize Route</button>
+    </div>
+    <div id="addresses"></div>
+    <div id="map"></div>
+
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        const addresses = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 53.5444, lng: -113.4909 }, // Edmonton, Alberta
+                zoom: 10
+            });
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+        }
+
+        function saveContact() {
+            const name = document.getElementById('name').value;
+            const address = document.getElementById('address').value;
+            if (name && address) {
+                fetch('/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, address })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    document.getElementById('name').value = '';
+                    document.getElementById('address').value = '';
+                });
+            } else {
+                alert('Name and address are required.');
+            }
+        }
+
+        function loadContacts() {
+            fetch('/contacts')
+            .then(response => response.json())
+            .then(data => {
+                const addressList = document.getElementById('addresses');
+                addressList.innerHTML = '';
+                data.forEach(contact => {
+                    const listItem = document.createElement('div');
+                    listItem.textContent = `${contact.name}: ${contact.address}`;
+                    addressList.appendChild(listItem);
+                });
+            });
+        }
+
+        function addAddress() {
+            const address = document.getElementById('address').value;
+            if (address) {
+                addresses.push(address);
+                const addressList = document.getElementById('addresses');
+                const listItem = document.createElement('div');
+                listItem.textContent = address;
+                addressList.appendChild(listItem);
+                document.getElementById('address').value = '';
+            }
+        }
+
+        function optimizeRoute() {
+            if (addresses.length < 2) {
+                alert('Please enter at least two addresses.');
+                return;
+            }
+
+            const waypoints = addresses.slice(1, -1).map(address => ({
+                location: address,
+                stopover: true
+            }));
+
+            directionsService.route({
+                origin: addresses[0],
+                destination: addresses[addresses.length - 1],
+                waypoints: waypoints,
+                optimizeWaypoints: true,
+                travelMode: 'DRIVING'
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                    fetch('/routes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ addresses })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                    });
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>

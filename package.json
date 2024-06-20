@@ -1,0 +1,19 @@
+{
+  "name": "route-planner",
+  "version": "1.0.0",
+  "description": "A simple route planner application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "body-parser": "^1.19.0",
+    "fs": "0.0.1-security"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Your Name",
+  "license": "ISC"
+}
